@@ -55,3 +55,31 @@ class GPT(nn.Module):
             x = torch.cat([x, next_token], dim=-1)
 
         return x
+    
+
+    def save(self, path):
+        torch.save({
+            'model_state_dict': self.state_dict(),
+            'vocab_size': self.vocab_size,
+            'max_seq_len': self.max_seq_len,
+            'emb_size': self.emb_size,
+            'num_heads': self.num_heads,
+            'head_size': self.head_size,
+            'num_layers': self.num_layers
+        }, path)
+
+ 
+    @classmethod
+    def load(cls, path, device):
+        checkpoint = torch.load(path, map_location=device)
+        model = cls(
+            vocab_size=checkpoint['vocab_size'],
+            max_seq_len=checkpoint['max_seq_len'],
+            emb_size=checkpoint['emb_size'],
+            num_heads=checkpoint['num_heads'],
+            head_size=checkpoint['head_size'],
+            num_layers=checkpoint['num_layers']
+        )
+        model.load_state_dict(checkpoint['model_state_dict'])
+        model.to(device)
+        return model
