@@ -37,3 +37,34 @@ class HeadAttention(nn.Module):
         output = torch.matmul(attention_weights, V_matrix)
 
         return output
+    
+
+class MultiHeadAttention(nn.Module):
+
+    def __init__(
+        self,
+        num_heads: int,
+        emb_size: int,
+        head_size: int,
+        max_seq_len: int,
+        dropout: float = 0.1,
+    ) -> None:
+        super().__init__()
+        self.heads = nn.ModuleList(
+            [
+                HeadAttention(
+                    emb_size=emb_size, head_size=head_size, max_seq_len=max_seq_len
+                )
+                for _ in range(num_heads)
+            ]
+        )
+        self.linear = nn.Linear(head_size*num_heads, emb_size)
+        self.dropout = nn.Dropout(p=dropout)
+
+    
+    def forward(self, x: float):
+        outputs = [head(x) for head in self.heads]
+        output = torch.cat(outputs, dim=-1)
+        output = self.linear(output)
+        output = self.dropout(output)
+        return output
