@@ -43,14 +43,17 @@ class GPT(nn.Module):
         return x
     
 
-    def generate(self, x: torch.Tensor, max_new_tokens: int) -> torch.Tensor:
+    def generate(self, x: torch.Tensor, max_new_tokens: int, do_sample: bool) -> torch.Tensor:
         for _ in range(max_new_tokens):
             context = x[:, -self.max_seq_len:]
 
             logits = self.forward(context)
             
             next_token_probs = logits[:, -1, :].softmax(dim=-1)
-            next_token = next_token_probs.argmax(dim=-1, keepdim=True)
+            if not do_sample:
+                next_token = next_token_probs.argmax(dim=-1, keepdim=True)
+            else:
+                next_token = torch.multinomial(next_token_probs, 1)
 
             x = torch.cat([x, next_token], dim=-1)
 
