@@ -1,10 +1,12 @@
 from collections import Counter
+import dill
 
 
 class BPE:
 
     def __init__(self, vocab_size: int) -> None:
         self.vocab_size = vocab_size
+
 
     def fit(self, text: str):
         self.id2token = dict()
@@ -49,6 +51,7 @@ class BPE:
             self.id2token[i] = val
             self.token2id[val] = i
 
+
     def encode(self, text: str) -> list:
         res = []
         while text:
@@ -62,3 +65,25 @@ class BPE:
                     text = text[len(token) :]
                     break
         return res
+    
+
+    def decode(self, token_ids: list) -> str:
+        res = ''
+        for token_id in token_ids:
+            res += self.id2token[token_id]
+        return res
+    
+
+    def save(self, filename):
+        with open(filename, 'wb') as f:
+            dill.dump(self, f)
+        print(f"Объект сохранён в {filename}")
+
+
+    @classmethod
+    def load(cls, filename):
+        with open(filename, 'rb') as f:
+            obj = dill.load(f)
+                
+        print(f"Объект загружен из {filename}")
+        return obj
