@@ -17,6 +17,7 @@ class GPT(nn.Module):
             device: str = 'cpu'
         ) -> None:
         super().__init__()
+        self.max_seq_len = max_seq_len
         self.token_embeddings = TokenEmbeddings(vocab_size=vocab_size, emb_size=emb_size)
         self.positional_embeddings = PositionalEmbeddings(max_seq_len=max_seq_len, emb_size=emb_size)
         self.dropout = nn.Dropout(p=dropout)
@@ -39,4 +40,18 @@ class GPT(nn.Module):
         x = self.dropout(x)
         x = self.decoders(x)
         x = self.linear(x)
+        return x
+    
+
+    def generate(self, x: torch.Tensor, max_new_tokens: int) -> torch.Tensor:
+        for _ in range(max_new_tokens):
+            context = x[:, -self.max_seq_len:]
+
+            logits = self.forward(context)
+            
+            next_token_probs = logits[:, -1, :].softmax(dim=-1)
+            next_token = next_token_probs.argmax(dim=-1, keepdim=True)
+
+            x = torch.cat([x, next_token], dim=-1)
+
         return x
