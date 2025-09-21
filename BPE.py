@@ -48,3 +48,17 @@ class BPE:
         for i, val in enumerate(unique_tokens):
             self.id2token[i] = val
             self.token2id[val] = i
+
+    def encode(self, text: str) -> list:
+        res = []
+        while text:
+            tokens = []
+            for token in self.token2id.keys():
+                if text[0] == token[0]:
+                    tokens.append(token)
+            for token in sorted(tokens, key=len, reverse=True):
+                if text.find(token) == 0:
+                    res.append(self.token2id[token])
+                    text = text[len(token) :]
+                    break
+        return res
