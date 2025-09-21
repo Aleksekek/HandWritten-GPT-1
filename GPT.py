@@ -43,11 +43,11 @@ class GPT(nn.Module):
         return x
     
 
-    def generate(self, x: torch.Tensor, max_new_tokens: int, do_sample: bool) -> torch.Tensor:
+    def generate(self, x: torch.Tensor, max_new_tokens: int, do_sample: bool, temperature: float = 1.0) -> torch.Tensor:
         for _ in range(max_new_tokens):
             context = x[:, -self.max_seq_len:]
 
-            logits = self.forward(context)
+            logits = self.forward(context)/temperature
             
             next_token_probs = logits[:, -1, :].softmax(dim=-1)
             if not do_sample:
