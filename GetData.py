@@ -11,11 +11,11 @@ class GetData(Dataset):
         self.device = device
 
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data) - self.seq_len - 1
 
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         x = torch.tensor(self.data[idx:idx + self.seq_len])
         y = torch.tensor(self.data[idx + 1:idx + self.seq_len + 1])
         return (x.to(self.device), y.to(self.device))
