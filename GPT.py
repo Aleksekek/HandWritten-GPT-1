@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -94,31 +95,86 @@ class GPT(nn.Module):
 
     def fit(self, train_loader: DataLoader, valid_loader: DataLoader, num_epochs: int, learning_rate: float):
         self.to(self.device)
-        optimizer = torch.optim.Adam(self.parameters(), lr = learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
         entropy_loss = nn.CrossEntropyLoss()
-
-        for epoch in range(num_epochs):
+        
+        # Для отслеживания истории обучения
+        train_losses = []
+        val_losses = []
+        best_val_loss = float('inf')
+        
+        # Главный цикл по эпохам с tqdm
+        epoch_pbar = tqdm(range(num_epochs), desc="Обучение модели", unit="epoch")
+        
+        for epoch in epoch_pbar:
+            # Тренировочная эпоха
             self.train()
-            for i_t in train_loader:
-                inputs, targets = i_t
+            epoch_train_loss = 0.0
+            train_batches = 0
+            
+            # Прогресс-бар для тренировочных батчей
+            train_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Train", leave=False)
+            
+            for inputs, targets in train_pbar:
+                inputs = inputs.to(self.device)
+                targets = targets.to(self.device)
+                
+                # Прямой проход
                 x = self.forward(inputs)
                 batch_size, seq_len, vocab_size = x.shape
-                x = torch.reshape(x, [batch_size*seq_len, vocab_size])
-                targets = torch.flatten(targets)
+                x = x.reshape(batch_size * seq_len, vocab_size)
+                targets = targets.flatten()
+                
+                # Расчет лосса и обратный проход
                 loss = entropy_loss(x, targets)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
+                
+                # Статистика для прогресс-бара
+                epoch_train_loss += loss.item()
+                train_batches += 1
+                train_pbar.set_postfix({"Batch Loss": f"{loss.item():.4f}"})
+            
+            # Средний лосс за эпоху тренировки
+            avg_train_loss = epoch_train_loss / train_batches
+            train_losses.append(avg_train_loss)
+            
+            # Валидационная эпоха
             self.eval()
+            epoch_val_loss = 0.0
+            val_batches = 0
+            
+            # Прогресс-бар для валидационных батчей
+            val_pbar = tqdm(valid_loader, desc=f"Epoch {epoch+1}/{num_epochs} - Valid", leave=False)
+            
             with torch.no_grad():
-                for val in valid_loader:
-                    inputs, targets = val
+                for inputs, targets in val_pbar:
+                    inputs = inputs.to(self.device)
+                    targets = targets.to(self.device)
+                    
                     x = self.forward(inputs)
                     batch_size, seq_len, vocab_size = x.shape
-                    x = torch.reshape(x, [batch_size*seq_len, vocab_size])
-                    targets = torch.flatten(targets)
+                    x = x.reshape(batch_size * seq_len, vocab_size)
+                    targets = targets.flatten()
+                    
                     loss = entropy_loss(x, targets)
+                    epoch_val_loss += loss.item()
+                    val_batches += 1
+                    val_pbar.set_postfix({"Batch Loss": f"{loss.item():.4f}"})
+            
+            # Средний лосс за эпоху валидации
+            avg_val_loss = epoch_val_loss / val_batches
+            val_losses.append(avg_val_loss)
+            
+            # Обновление главного прогресс-бара
+            epoch_pbar.set_postfix({
+                "Train Loss": f"{avg_train_loss:.4f}",
+                "Val Loss": f"{avg_val_loss:.4f}"
+            })
+        
+        print(f"Обучение завершено! Лучший val_loss: {best_val_loss:.4f}")
+        return train_losses, val_losses
     
 
     def save(self, path):
