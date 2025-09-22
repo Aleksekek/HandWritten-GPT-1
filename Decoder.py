@@ -26,7 +26,7 @@ class Decoder(nn.Module):
         self.norm2 = nn.LayerNorm(emb_size)
 
 
-    def forward(self, x: float):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         output = self.miltihead_attention(x)
         output = output + x
         output = self.norm1(output)
