@@ -8,7 +8,7 @@ class BPE:
         self.vocab_size = vocab_size
 
 
-    def fit(self, text: str):
+    def fit(self, text: str) -> None:
         self.id2token = dict()
         self.token2id = dict()
         unique_tokens = sorted(list(set(text)))
@@ -74,14 +74,14 @@ class BPE:
         return res
     
 
-    def save(self, filename):
+    def save(self, filename: str) -> None:
         with open(filename, 'wb') as f:
             dill.dump(self, f)
         print(f"Объект сохранён в {filename}")
 
 
     @classmethod
-    def load(cls, filename):
+    def load(cls, filename: str) -> object:
         with open(filename, 'rb') as f:
             obj = dill.load(f)
                 
