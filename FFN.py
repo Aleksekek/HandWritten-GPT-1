@@ -11,7 +11,7 @@ class FeedForward(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.linear1(x)
         x = self.relu(x)
         x = self.linear2(x)
