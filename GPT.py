@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch.utils.data import DataLoader
 from Embeddings import TokenEmbeddings, PositionalEmbeddings
 from Decoder import Decoder
 
@@ -18,6 +19,7 @@ class GPT(nn.Module):
         ) -> None:
         super().__init__()
         self.max_seq_len = max_seq_len
+        self.device = device
         self.token_embeddings = TokenEmbeddings(vocab_size=vocab_size, emb_size=emb_size)
         self.positional_embeddings = PositionalEmbeddings(max_seq_len=max_seq_len, emb_size=emb_size)
         self.dropout = nn.Dropout(p=dropout)
@@ -88,6 +90,35 @@ class GPT(nn.Module):
             x = torch.cat([x, next_token], dim=-1)
 
         return x
+    
+
+    def fit(self, train_loader: DataLoader, valid_loader: DataLoader, num_epochs: int, learning_rate: float):
+        self.to(self.device)
+        optimizer = torch.optim.Adam(self.parameters(), lr = learning_rate)
+        entropy_loss = nn.CrossEntropyLoss()
+
+        for epoch in range(num_epochs):
+            self.train()
+            for i_t in train_loader:
+                inputs, targets = i_t
+                x = self.forward(inputs)
+                batch_size, seq_len, vocab_size = x.shape
+                x = torch.reshape(x, [batch_size*seq_len, vocab_size])
+                targets = torch.flatten(targets)
+                loss = entropy_loss(x, targets)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            self.eval()
+            with torch.no_grad():
+                for val in valid_loader:
+                    inputs, targets = val
+                    x = self.forward(inputs)
+                    batch_size, seq_len, vocab_size = x.shape
+                    x = torch.reshape(x, [batch_size*seq_len, vocab_size])
+                    targets = torch.flatten(targets)
+                    loss = entropy_loss(x, targets)
     
 
     def save(self, path):
