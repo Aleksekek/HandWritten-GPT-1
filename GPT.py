@@ -95,7 +95,7 @@ class GPT(nn.Module):
 
     def fit(self, train_loader: DataLoader, valid_loader: DataLoader, num_epochs: int, learning_rate: float):
         self.to(self.device)
-        optimizer = torch.optim.Adam(self.parameters(), lr=learning_rate)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate)
         entropy_loss = nn.CrossEntropyLoss()
         
         # Для отслеживания истории обучения
