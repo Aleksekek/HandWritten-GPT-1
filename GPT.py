@@ -43,13 +43,43 @@ class GPT(nn.Module):
         return x
     
 
-    def generate(self, x: torch.Tensor, max_new_tokens: int, do_sample: bool, temperature: float = 1.0) -> torch.Tensor:
+    def generate(
+            self, 
+            x: torch.Tensor, 
+            max_new_tokens: int, 
+            do_sample: bool, 
+            temperature: float = 1.0, 
+            top_k: int = None, top_p: float = None # type: ignore
+        ) -> torch.Tensor:
         for _ in range(max_new_tokens):
             context = x[:, -self.max_seq_len:]
 
-            logits = self.forward(context)/temperature
-            
-            next_token_probs = logits[:, -1, :].softmax(dim=-1)
+            logits = self.forward(context) / temperature
+            logits = logits[:, -1, :]
+
+            if do_sample:
+                # --- top_k ---
+                if top_k is not None:
+                    topk_vals, topk_idx = torch.topk(logits, top_k, dim=-1)
+                    mask = torch.zeros_like(logits, dtype=torch.uint8)
+                    mask.scatter_(1, topk_idx, 1)
+                    logits = logits.masked_fill(mask == 0, -float('Inf'))
+
+                # --- top_p ---
+                if top_p is not None:
+                    sorted_logits, sorted_indices = torch.sort(logits, descending=True, dim=-1)
+                    probs = sorted_logits.softmax(dim=-1)
+                    cum_probs = probs.cumsum(dim=-1)
+
+                    mask = cum_probs < top_p
+                    mask[..., 0] = 1
+
+                    mask = mask.to(torch.uint8)
+                    unsorted_mask = torch.zeros_like(mask)
+                    unsorted_mask.scatter_(1, sorted_indices, mask)
+                    logits = logits.masked_fill(unsorted_mask == 0, -float('Inf'))
+
+            next_token_probs = logits.softmax(dim=-1)
             if not do_sample:
                 next_token = next_token_probs.argmax(dim=-1, keepdim=True)
             else:
