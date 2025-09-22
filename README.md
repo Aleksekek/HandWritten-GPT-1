@@ -24,7 +24,7 @@
 ### 4. `Decoder.py`
 *   **`Decoder`**: Один декодерный блок трансформера. Объединяет все компоненты:
     1.  **MultiHeadAttention** → Residual Connection → **LayerNorm**
-    2.  **FeedForward** → Residual Connection → **LayerNorm**
+    2.  **FeedForward** → Residual Connection → **LayerNorm**    
     Residual connections помогают избежать проблемы исчезающих градиентов.
 
 ### 5. `GPT.py`
