@@ -36,7 +36,7 @@ class GPT(nn.Module):
         self.linear = nn.Linear(emb_size, vocab_size)
 
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         tokens = self.token_embeddings(x)
         positions = self.positional_embeddings(x.shape[1])
         x = tokens + positions
@@ -93,7 +93,13 @@ class GPT(nn.Module):
         return x
     
 
-    def fit(self, train_loader: DataLoader, valid_loader: DataLoader, num_epochs: int, learning_rate: float):
+    def fit(
+            self, 
+            train_loader: DataLoader, 
+            valid_loader: DataLoader, 
+            num_epochs: int, 
+            learning_rate: float
+        ) -> tuple[list, list]:
         self.to(self.device)
         optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate)
         entropy_loss = nn.CrossEntropyLoss()
@@ -177,7 +183,7 @@ class GPT(nn.Module):
         return train_losses, val_losses
     
 
-    def save(self, path):
+    def save(self, path: str) -> None:
         torch.save({
             'model_state_dict': self.state_dict(),
             'vocab_size': self.vocab_size,
@@ -190,7 +196,7 @@ class GPT(nn.Module):
 
  
     @classmethod
-    def load(cls, path, device):
+    def load(cls, path: str, device: str) -> object:
         checkpoint = torch.load(path, map_location=device)
         model = cls(
             vocab_size=checkpoint['vocab_size'],
